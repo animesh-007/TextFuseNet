@@ -44,14 +44,14 @@ def get_parser():
 
     parser.add_argument(
         "--weights",
-        default="./out_dir_r101/totaltext_model/model_tt_r101.pth",
+        default="path/to/the/weights/file",
         metavar="pth",
         help="the model used to inference",
     )
 
     parser.add_argument(
         "--input",
-        default="./input_images/*.jpg",
+        default="path/to/the/test/images",
         nargs="+",
         help="the folder of totaltext test images"
     )
@@ -91,22 +91,25 @@ def save_result_to_txt(txt_save_path,prediction,polygons):
 
     file = open(txt_save_path,'w')
     classes = prediction['instances'].pred_classes
+    # print("class = ",classes)
 
     for i in range(len(classes)):
-        if classes[i]==0:
+        if classes[i]!=0 or classes[i]==0 :
             if len(polygons[i]) != 0:
                 points = []
                 for j in range(0,len(polygons[i][0]),2):
                     points.append([polygons[i][0][j],polygons[i][0][j+1]])
                 points = np.array(points)
                 area = compute_polygon_area(points)
-
+                # print("points = ", points)
+                # print("area = ", area)
+                
                 if area > 220:
                     str_out = ''
                     for pt in polygons[i][0]:
                         str_out += str(pt)
                         str_out += ','
-                    file.writelines(str_out+'###')
+                    file.writelines(f'class = {classes[i]},'+' area ='+f'{area},'+str_out)
                     file.writelines('\r\n')
     file.close()
 
@@ -125,19 +128,19 @@ if __name__ == "__main__":
     img_count = 0
     for i in glob.glob(test_images_path):
         print(i)
+        
         img_name = os.path.basename(i)
+        # print(img_name.split('.')[0])
         img_save_path = output_path + img_name.split('.')[0] + '.jpg'
         img = cv2.imread(i)
         start_time = time.time()
         
         prediction, vis_output, polygons = detection_demo.run_on_image(img)
-
-        txt_save_path = output_path + 'res_img' + img_name.split('.')[0].split('img')[1] + '.txt'
+        print(img_name.split('.')[0].split('img'))
+        txt_save_path = output_path + 'res_img_' + img_name.split('.')[0] + '.txt'
         save_result_to_txt(txt_save_path,prediction,polygons)
 
         print("Time: {:.2f} s / img".format(time.time() - start_time))
         vis_output.save(img_save_path)
         img_count += 1
     print("Average Time: {:.2f} s /img".format((time.time() - start_time_all) / img_count))
-
-
